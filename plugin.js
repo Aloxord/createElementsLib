@@ -4,6 +4,10 @@
 		var el = arguments[0];
 		var options = {};
 		var fragment = null;
+		var aux = null;
+		var regExps = {
+			element: /^<?([a-zA-Z]+)?(?:(?:\sid\=\"|#)([a-zA-Z]+)\"?)?(?:(?:\sclass\=\"|\.)([a-zA-Z\s\.]+)\"?)?>?/,
+		};
 		try{
 			if(arguments.length <= 2){
 				if(!Array.isArray(arguments[1]) && typeof arguments[1] != 'string'){
@@ -16,21 +20,29 @@
 				fragment = arguments[2];
 			}
 			if (typeof el != 'string'){
-				throw (new Error('Primer parametro de elemento debe ser texto'));
+				throw (new Error('First parameter must be a string'));
 			}
 			if (typeof options != 'object' && options !== undefined){
-				throw (new Error('Opciones de elemento mal declaradas'));
+				throw (new Error('Badly declared element options'));
 			}		
 		}catch(err){
 			print(err,3);
 		}
 
+		if(el.indexOf('<') != -1 || el.indexOf('#') != -1 || el.indexOf('.') != -1){
+			aux = regExps.element.exec(el);
+			
+			el = aux[1] ? aux[1] : 'div';
+			options.id = options.id ? options.id : aux[2] ? aux[2] : "";
+			options.class = options.class ? options.class : aux[3] ? aux[3].split('.') : "";;
+		}
+
 		options = merge({
 			id: "",
 			class: "",
-			HTMLValid: false,
 			on:{},
 			style:{},
+			HTMLValid: false,
 		},options);
 
 		var HTMLValidElements = ['div','p','span'];
@@ -51,7 +63,15 @@
 		var $el = document.createElement(el);
 
 		if(options.id != "")$el.id = options.id;
-		if(options.class != "") $el.classList.add(options.class);
+		if(options.class != ""){
+			if(Array.isArray(options.class)){
+				for(var i in options.class){
+					$el.classList.add(options.class[i]);
+				}
+			}else{
+				$el.classList.add(options.class);
+			}
+		}
 		if(DF !== undefined) $el.appendChild(DF);
 		if(!empty(options.on)) bindEvents($el,options.on);
 		if(!empty(options.style)) setStyles($el,options.style);
